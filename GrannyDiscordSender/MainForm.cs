@@ -1,4 +1,6 @@
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace GrannyDiscordSender;
 
@@ -139,17 +141,20 @@ public sealed class MainForm : Form
 
         try
         {
+            var story = _storyTextBox.Text.Trim();
+            var hasStory = !string.IsNullOrWhiteSpace(story);
+            var hasImage = !string.IsNullOrWhiteSpace(_imagePath);
+
             using var client = new HttpClient();
-            using var content = new MultipartFormDataContent();
 
-            if (!string.IsNullOrWhiteSpace(_storyTextBox.Text))
+            if (hasImage)
             {
-                content.Add(new StringContent(_storyTextBox.Text.Trim()), "content");
-            }
+                using var content = new MultipartFormDataContent();
+                var payload = new { content = hasStory ? story : string.Empty };
+                var payloadJson = JsonSerializer.Serialize(payload);
+                content.Add(new StringContent(payloadJson, Encoding.UTF8, "application/json"), "payload_json");
 
-            if (!string.IsNullOrWhiteSpace(_imagePath))
-            {
-                await using var stream = File.OpenRead(_imagePath);
+                await using var stream = File.OpenRead(_imagePath!);
                 var fileContent = new StreamContent(stream);
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
                 content.Add(fileContent, "file", Path.GetFileName(_imagePath));
@@ -159,6 +164,9 @@ public sealed class MainForm : Form
             }
             else
             {
+                var payload = new { content = story };
+                var payloadJson = JsonSerializer.Serialize(payload);
+                using var content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(webhookUrl, content);
                 response.EnsureSuccessStatusCode();
             }
