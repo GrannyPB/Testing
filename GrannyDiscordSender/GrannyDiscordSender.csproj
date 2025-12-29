@@ -5,5 +5,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.1.0</Version>
+    <FileVersion>1.1.0.0</FileVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\Assets\Granny-porch.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

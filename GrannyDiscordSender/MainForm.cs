@@ -12,35 +12,58 @@ public sealed class MainForm : Form
     private readonly Button _chooseImageButton = new();
     private readonly Button _sendButton = new();
     private readonly Label _statusLabel = new();
+    private readonly PictureBox _logoPictureBox = new();
+    private readonly AppSettings _settings;
     private string? _imagePath;
 
     public MainForm()
     {
-        Text = "Granny's Discord Sender";
+        _settings = AppSettings.Load();
+
+        Text = "Granny's Porch";
         MinimumSize = new Size(640, 520);
         StartPosition = FormStartPosition.CenterScreen;
+        BackgroundImageLayout = ImageLayout.Zoom;
+        DoubleBuffered = true;
 
         var mainPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(16),
             ColumnCount = 2,
-            RowCount = 7,
+            RowCount = 8,
             AutoSize = true,
+            BackColor = Color.Transparent,
         };
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28));
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72));
 
+        _logoPictureBox.Size = new Size(64, 64);
+        _logoPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+        _logoPictureBox.Margin = new Padding(0, 0, 12, 0);
+        _logoPictureBox.TabStop = false;
+        LoadBrandingImage();
+
         var header = new Label
         {
-            Text = "Send photos and stories to Granny's Discord",
+            Text = "Send photos and stories to Granny's Porch",
             Dock = DockStyle.Fill,
             Font = new Font(Font.FontFamily, 14, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleLeft,
             AutoSize = true,
         };
-        mainPanel.Controls.Add(header, 0, 0);
-        mainPanel.SetColumnSpan(header, 2);
+        var brandingPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+        };
+        brandingPanel.Controls.Add(_logoPictureBox);
+        brandingPanel.Controls.Add(header);
+
+        mainPanel.Controls.Add(brandingPanel, 0, 0);
+        mainPanel.SetColumnSpan(brandingPanel, 2);
 
         mainPanel.Controls.Add(new Label
         {
@@ -51,6 +74,8 @@ public sealed class MainForm : Form
 
         _webhookTextBox.Dock = DockStyle.Fill;
         _webhookTextBox.PlaceholderText = "https://discord.com/api/webhooks/...";
+        _webhookTextBox.Text = _settings.WebhookUrl ?? string.Empty;
+        _webhookTextBox.TextChanged += (_, _) => _settings.WebhookUrl = _webhookTextBox.Text.Trim();
         mainPanel.Controls.Add(_webhookTextBox, 1, 1);
 
         mainPanel.Controls.Add(new Label
@@ -64,6 +89,7 @@ public sealed class MainForm : Form
         _storyTextBox.Multiline = true;
         _storyTextBox.Height = 180;
         _storyTextBox.ScrollBars = ScrollBars.Vertical;
+        _storyTextBox.PlaceholderText = "Share the highlight of your day...";
         mainPanel.Controls.Add(_storyTextBox, 1, 2);
 
         mainPanel.Controls.Add(new Label
@@ -104,6 +130,21 @@ public sealed class MainForm : Form
         mainPanel.Controls.Add(_statusLabel, 1, 5);
 
         Controls.Add(mainPanel);
+        AcceptButton = _sendButton;
+        FormClosing += (_, _) => _settings.Save();
+    }
+
+    private void LoadBrandingImage()
+    {
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "Granny-porch.png");
+        var logoImage = LoadImageFromFile(imagePath);
+        if (logoImage is null)
+        {
+            return;
+        }
+
+        _logoPictureBox.Image = logoImage;
+        BackgroundImage = LoadImageFromFile(imagePath);
     }
 
     private void ChooseImageClicked(object? sender, EventArgs e)
@@ -112,13 +153,27 @@ public sealed class MainForm : Form
         {
             Filter = "Image Files|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp",
             Title = "Select an image to share",
+            InitialDirectory = _settings.LastImageDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
         };
 
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
             _imagePath = dialog.FileName;
             _imageLabel.Text = Path.GetFileName(_imagePath);
+            _settings.LastImageDirectory = Path.GetDirectoryName(_imagePath);
         }
+    }
+
+    private static Image? LoadImageFromFile(string imagePath)
+    {
+        if (!File.Exists(imagePath))
+        {
+            return null;
+        }
+
+        using var stream = File.OpenRead(imagePath);
+        using var source = Image.FromStream(stream);
+        return new Bitmap(source);
     }
 
     private async Task SendAsync()
