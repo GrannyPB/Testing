@@ -13,7 +13,10 @@ public sealed class MainForm : Form
     private readonly Button _sendButton = new();
     private readonly Label _statusLabel = new();
     private string? _imagePath;
+ codex/develop-windows-app-for-discord-sharing-0m5l03
     private Image? _backgroundImage;
+
+ main
 
     public MainForm()
     {
