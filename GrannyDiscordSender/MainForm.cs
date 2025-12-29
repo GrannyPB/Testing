@@ -12,11 +12,12 @@ public sealed class MainForm : Form
     private readonly Button _chooseImageButton = new();
     private readonly Button _sendButton = new();
     private readonly Label _statusLabel = new();
+    private readonly PictureBox _logoPictureBox = new();
     private string? _imagePath;
 
     public MainForm()
     {
-        Text = "Granny's Discord Sender";
+        Text = "Granny's Porch";
         MinimumSize = new Size(640, 520);
         StartPosition = FormStartPosition.CenterScreen;
 
@@ -25,22 +26,38 @@ public sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(16),
             ColumnCount = 2,
-            RowCount = 7,
+            RowCount = 8,
             AutoSize = true,
         };
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28));
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72));
 
+        _logoPictureBox.Size = new Size(64, 64);
+        _logoPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+        _logoPictureBox.Margin = new Padding(0, 0, 12, 0);
+        _logoPictureBox.TabStop = false;
+        LoadBrandingImage();
+
         var header = new Label
         {
-            Text = "Send photos and stories to Granny's Discord",
+            Text = "Send photos and stories to Granny's Porch",
             Dock = DockStyle.Fill,
             Font = new Font(Font.FontFamily, 14, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleLeft,
             AutoSize = true,
         };
-        mainPanel.Controls.Add(header, 0, 0);
-        mainPanel.SetColumnSpan(header, 2);
+        var brandingPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+        };
+        brandingPanel.Controls.Add(_logoPictureBox);
+        brandingPanel.Controls.Add(header);
+
+        mainPanel.Controls.Add(brandingPanel, 0, 0);
+        mainPanel.SetColumnSpan(brandingPanel, 2);
 
         mainPanel.Controls.Add(new Label
         {
@@ -104,6 +121,15 @@ public sealed class MainForm : Form
         mainPanel.Controls.Add(_statusLabel, 1, 5);
 
         Controls.Add(mainPanel);
+    }
+
+    private void LoadBrandingImage()
+    {
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "Granny-porch.png");
+        if (File.Exists(imagePath))
+        {
+            _logoPictureBox.Image = Image.FromFile(imagePath);
+        }
     }
 
     private void ChooseImageClicked(object? sender, EventArgs e)
