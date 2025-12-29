@@ -13,12 +13,17 @@ public sealed class MainForm : Form
     private readonly Button _sendButton = new();
     private readonly Label _statusLabel = new();
     private string? _imagePath;
+ codex/develop-windows-app-for-discord-sharing-0m5l03
+    private Image? _backgroundImage;
+
+ main
 
     public MainForm()
     {
         Text = "Granny's Discord Sender";
         MinimumSize = new Size(640, 520);
         StartPosition = FormStartPosition.CenterScreen;
+        LoadBackgroundImage();
 
         var mainPanel = new TableLayoutPanel
         {
@@ -27,6 +32,7 @@ public sealed class MainForm : Form
             ColumnCount = 2,
             RowCount = 7,
             AutoSize = true,
+            BackColor = Color.FromArgb(220, Color.White),
         };
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28));
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72));
@@ -104,6 +110,30 @@ public sealed class MainForm : Form
         mainPanel.Controls.Add(_statusLabel, 1, 5);
 
         Controls.Add(mainPanel);
+    }
+
+    private void LoadBackgroundImage()
+    {
+        var backgroundPath = Path.Combine(AppContext.BaseDirectory, "Assets", "granny-porch.png");
+        if (!File.Exists(backgroundPath))
+        {
+            return;
+        }
+
+        using var stream = new FileStream(backgroundPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        _backgroundImage = Image.FromStream(stream);
+        BackgroundImage = _backgroundImage;
+        BackgroundImageLayout = ImageLayout.Stretch;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _backgroundImage?.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 
     private void ChooseImageClicked(object? sender, EventArgs e)
