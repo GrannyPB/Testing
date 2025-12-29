@@ -147,6 +147,15 @@ public sealed class MainForm : Form
         BackgroundImage = LoadImageFromFile(imagePath);
     }
 
+    private void LoadBrandingImage()
+    {
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "Granny-porch.png");
+        if (File.Exists(imagePath))
+        {
+            _logoPictureBox.Image = Image.FromFile(imagePath);
+        }
+    }
+
     private void ChooseImageClicked(object? sender, EventArgs e)
     {
         using var dialog = new OpenFileDialog
