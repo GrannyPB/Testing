@@ -13,13 +13,18 @@ public sealed class MainForm : Form
     private readonly Button _sendButton = new();
     private readonly Label _statusLabel = new();
     private readonly PictureBox _logoPictureBox = new();
+    private readonly AppSettings _settings;
     private string? _imagePath;
 
     public MainForm()
     {
+        _settings = AppSettings.Load();
+
         Text = "Granny's Porch";
         MinimumSize = new Size(640, 520);
         StartPosition = FormStartPosition.CenterScreen;
+        BackgroundImageLayout = ImageLayout.Zoom;
+        DoubleBuffered = true;
 
         var mainPanel = new TableLayoutPanel
         {
@@ -28,6 +33,7 @@ public sealed class MainForm : Form
             ColumnCount = 2,
             RowCount = 8,
             AutoSize = true,
+            BackColor = Color.Transparent,
         };
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28));
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72));
@@ -68,6 +74,8 @@ public sealed class MainForm : Form
 
         _webhookTextBox.Dock = DockStyle.Fill;
         _webhookTextBox.PlaceholderText = "https://discord.com/api/webhooks/...";
+        _webhookTextBox.Text = _settings.WebhookUrl ?? string.Empty;
+        _webhookTextBox.TextChanged += (_, _) => _settings.WebhookUrl = _webhookTextBox.Text.Trim();
         mainPanel.Controls.Add(_webhookTextBox, 1, 1);
 
         mainPanel.Controls.Add(new Label
@@ -81,6 +89,7 @@ public sealed class MainForm : Form
         _storyTextBox.Multiline = true;
         _storyTextBox.Height = 180;
         _storyTextBox.ScrollBars = ScrollBars.Vertical;
+        _storyTextBox.PlaceholderText = "Share the highlight of your day...";
         mainPanel.Controls.Add(_storyTextBox, 1, 2);
 
         mainPanel.Controls.Add(new Label
@@ -121,6 +130,21 @@ public sealed class MainForm : Form
         mainPanel.Controls.Add(_statusLabel, 1, 5);
 
         Controls.Add(mainPanel);
+        AcceptButton = _sendButton;
+        FormClosing += (_, _) => _settings.Save();
+    }
+
+    private void LoadBrandingImage()
+    {
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "Granny-porch.png");
+        var logoImage = LoadImageFromFile(imagePath);
+        if (logoImage is null)
+        {
+            return;
+        }
+
+        _logoPictureBox.Image = logoImage;
+        BackgroundImage = LoadImageFromFile(imagePath);
     }
 
     private void LoadBrandingImage()
@@ -138,13 +162,27 @@ public sealed class MainForm : Form
         {
             Filter = "Image Files|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp",
             Title = "Select an image to share",
+            InitialDirectory = _settings.LastImageDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
         };
 
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
             _imagePath = dialog.FileName;
             _imageLabel.Text = Path.GetFileName(_imagePath);
+            _settings.LastImageDirectory = Path.GetDirectoryName(_imagePath);
         }
+    }
+
+    private static Image? LoadImageFromFile(string imagePath)
+    {
+        if (!File.Exists(imagePath))
+        {
+            return null;
+        }
+
+        using var stream = File.OpenRead(imagePath);
+        using var source = Image.FromStream(stream);
+        return new Bitmap(source);
     }
 
     private async Task SendAsync()
